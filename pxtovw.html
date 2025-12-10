@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <title>PX-to-VW-to-CLAMP Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.10.2/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <style>
+        /* 确保输入框不显示数字箭头 */
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        input[type="number"] {
+            -moz-appearance: textfield;
+        }
+
+        /* 提高输入框文字对比度 */
+        .high-contrast-input {
+            background-color: white !important;
+            /* 强制浅色背景 */
+            color: #1f2937 !important;
+            /* 强制深色文字 */
+            /* 增加右侧内边距，给单位留出空间 */
+            padding-right: 3.5rem !important;
+        }
+
+        /* 复制/Hover 样式 */
+        .copyable-result,
+        .copyable-cell {
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .copyable-result:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .copyable-cell:hover {
+            background-color: #3b82f61a;
+            /* 轻微的蓝色悬停效果 */
+        }
+
+        /* 自定义单位样式，使其看起来在输入框内部右侧 */
+        .input-unit {
+            position: absolute;
+            right: 0.75rem;
+            /* 匹配 input-group 的默认内边距 */
+            top: 50%;
+            transform: translateY(-50%);
+            font-weight: bold;
+            opacity: 0.6;
+            pointer-events: none;
+            /* 确保不影响输入框点击 */
+        }
+    </style>
+</head>
+
+<body class="bg-base-100 min-h-screen relative">
+
+    <div id="toast-message"
+        class="toast toast-top toast-center z-50 opacity-0 transition-opacity duration-300 pointer-events-none w-full max-w-sm">
+        <div class="alert alert-success shadow-lg">
+            <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none"
+                viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span id="toast-text">已复制！</span>
+        </div>
+    </div>
+
+    <div id="app" class="flex flex-col items-center py-12 px-4">
+
+        <header class="w-full max-w-4xl flex justify-end mb-6">
+            <div class="flex items-center space-x-2">
+                <span class="text-sm opacity-70">☀️ Light</span>
+                <input type="checkbox" id="theme-toggle" class="toggle toggle-primary" onclick="toggleTheme()"
+                    checked />
+                <span class="text-sm opacity-70">🌙 Dark</span>
+            </div>
+        </header>
+
+        <div class="w-full max-w-4xl">
+
+            <h1 class="text-5xl font-extrabold text-primary mb-12 text-center tracking-tight">
+                ✨ PX-to-VW-to-CLAMP Pro
+            </h1>
+
+            <div class="card bg-base-200 shadow-xl mb-10 p-6">
+                <h2 class="card-title text-2xl mb-4">⚙️ 配置项</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text">设计稿宽度</span>
+                        </label>
+                        <div class="relative w-full">
+                            <input id="design-width-input" type="number" placeholder="默认 1920"
+                                class="input input-bordered w-full text-lg high-contrast-input" min="100" value="1920"
+                                onchange="saveConfig()" />
+                            <span class="input-unit text-primary">PX</span>
+                        </div>
+                        <p class="text-sm text-gray-500 mt-2">尺寸已保存：<strong id="saved-width-display">1920px</strong></p>
+                    </div>
+
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text">CLAMP 最小缩放比例</span>
+                        </label>
+                        <div class="relative w-full">
+                            <input id="min-scale-input" type="number" placeholder="默认 80"
+                                class="input input-bordered w-full text-lg high-contrast-input" min="10" max="100"
+                                value="80" onchange="saveConfig()" />
+                            <span class="input-unit text-accent">%</span>
+                        </div>
+                        <p class="text-sm text-gray-500 mt-2">最小尺寸 = PX * <strong id="saved-scale-display">80%</strong>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card bg-primary shadow-2xl text-primary-content p-8 mb-10">
+                <h2 class="card-title text-3xl mb-6">💡 PX 实时转换</h2>
+
+                <div class="form-control w-full mb-6">
+                    <label class="label">
+                        <span class="label-text text-primary-content">输入 PX 值</span>
+                    </label>
+                    <div class="relative w-full">
+                        <input id="px-input" type="number" placeholder="例如 120"
+                            class="input input-bordered input-lg w-full text-xl high-contrast-input" min="0"
+                            oninput="updateConversion()" />
+                        <span class="input-unit text-accent text-lg">PX</span>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                    <div id="vw-result-container"
+                        class="text-center bg-base-100 text-base-content p-4 rounded-lg shadow-inner copyable-result tooltip tooltip-bottom"
+                        data-tip="点击复制 VW 值" onclick="copyResult('calculated-vw')">
+                        <p class="text-sm opacity-80">VW 值 (基于 <span id="current-design-width">1920</span>px)</p>
+                        <p class="text-3xl font-black mt-1 break-all">
+                            <span id="calculated-vw">0.0000vw</span>
+                        </p>
+                    </div>
+
+                    <div id="clamp-result-container"
+                        class="text-center bg-base-100 text-base-content p-4 rounded-lg shadow-inner copyable-result tooltip tooltip-bottom"
+                        data-tip="点击复制 CLAMP 表达式" onclick="copyResult('calculated-clamp')">
+                        <p class="text-sm opacity-80">CLAMP 表达式 (Min: <span id="current-min-scale">80%</span>, Max:
+                            <span id="current-max-px">120px</span>)
+                        </p>
+                        <p class="text-3xl font-black mt-1 break-all text-warning">
+                            <span id="calculated-clamp">clamp(0px, 0vw, 0px)</span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card bg-base-100 shadow-xl p-6">
+                <h2 class="card-title text-2xl mb-4">📋 常用尺寸对照表</h2>
+                <div class="overflow-x-auto">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4" id="px-list-grid">
+                    </div>
+                </div>
+            </div>
+
+            <footer class="footer footer-center p-4 text-base-content mt-12">
+                <aside>
+                    <p>
+                        Built by
+                        <a href="https://github.com/itinglight" target="_blank"
+                            class="link link-hover font-bold text-primary">itinglight</a>.
+                        Simplified PX-to-VW-to-CLAMP Tool.
+                    </p>
+                </aside>
+            </footer>
+
+        </div>
+    </div>
+
+    <script>
+        const DESIGN_WIDTH_KEY = 'px-to-vw-design-width';
+        const MIN_SCALE_KEY = 'px-to-vw-min-scale';
+        const THEME_KEY = 'app-theme';
+        const DEFAULT_WIDTH = 1920;
+        const DEFAULT_SCALE = 80;
+
+        const PX_LIST = [
+            12, 14, 16, 18, 20, 24, 28, 32, 36, 40, 48, 56, 64, 72, 96, 128, 160, 200
+        ];
+
+        // DOM 元素引用
+        const htmlElement = document.documentElement;
+        const themeToggle = document.getElementById('theme-toggle');
+        const designWidthInput = document.getElementById('design-width-input');
+        const minScaleInput = document.getElementById('min-scale-input');
+        const savedWidthDisplay = document.getElementById('saved-width-display');
+        const savedScaleDisplay = document.getElementById('saved-scale-display');
+        const pxInput = document.getElementById('px-input');
+
+        const calculatedVwDisplay = document.getElementById('calculated-vw');
+        const calculatedClampDisplay = document.getElementById('calculated-clamp');
+
+        const currentDesignWidthDisplay = document.getElementById('current-design-width');
+        const currentMinScaleDisplay = document.getElementById('current-min-scale');
+        const currentMaxPxDisplay = document.getElementById('current-max-px');
+
+        const pxListGrid = document.getElementById('px-list-grid');
+        const toastMessage = document.getElementById('toast-message');
+        const toastText = document.getElementById('toast-text');
+
+        let updateTimeout;
+        let copyTimeoutId;
+
+        // --- 核心计算函数 ---
+
+        function calculateVw(pxValue, width) {
+            const px = parseFloat(pxValue);
+            const w = parseFloat(width);
+            if (isNaN(px) || px <= 0 || isNaN(w) || w <= 0) {
+                return '0.0000';
+            }
+            return ((px / w) * 100).toFixed(4);
+        }
+
+        function calculateClamp(pxValue, width, scale) {
+            const px = parseFloat(pxValue);
+            const w = parseFloat(width);
+            const s = parseFloat(scale) / 100;
+
+            if (isNaN(px) || px <= 0 || isNaN(w) || w <= 0 || isNaN(s)) {
+                return 'clamp(0px, 0vw, 0px)';
+            }
+
+            const vw = calculateVw(px, w);
+            const minPx = (px * s).toFixed(2);
+
+            return `clamp(${minPx}px, ${vw}vw, ${px}px)`;
+        }
+
+        // --- 主题切换 ---
+
+        function loadTheme() {
+            const savedTheme = localStorage.getItem(THEME_KEY);
+            const isDark = savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches);
+
+            htmlElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+            themeToggle.checked = isDark;
+        }
+
+        function toggleTheme() {
+            const isDark = htmlElement.getAttribute('data-theme') === 'dark';
+            const newTheme = isDark ? 'light' : 'dark';
+
+            htmlElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem(THEME_KEY, newTheme);
+        }
+
+        // --- 配置和渲染逻辑 ---
+
+        function saveConfig() {
+            let designWidth = parseFloat(designWidthInput.value);
+            let minScale = parseFloat(minScaleInput.value);
+
+            if (isNaN(designWidth) || designWidth <= 0) {
+                designWidth = DEFAULT_WIDTH;
+                designWidthInput.value = DEFAULT_WIDTH;
+            }
+            if (isNaN(minScale) || minScale < 10 || minScale > 100) {
+                minScale = DEFAULT_SCALE;
+                minScaleInput.value = DEFAULT_SCALE;
+            }
+
+            localStorage.setItem(DESIGN_WIDTH_KEY, designWidth.toString());
+            localStorage.setItem(MIN_SCALE_KEY, minScale.toString());
+
+            savedWidthDisplay.textContent = `${designWidth}px`;
+            savedScaleDisplay.textContent = `${minScale}%`;
+            currentDesignWidthDisplay.textContent = designWidth;
+            currentMinScaleDisplay.textContent = `${minScale}%`;
+
+            updateConversion();
+            renderPxList();
+        }
+
+        function updateConversion() {
+            const px = pxInput.value;
+            const designWidth = parseFloat(designWidthInput.value);
+            const minScale = parseFloat(minScaleInput.value);
+
+            currentMaxPxDisplay.textContent = `${px}px`;
+
+            const vw = calculateVw(px, designWidth);
+            calculatedVwDisplay.textContent = `${vw}vw`;
+
+            const clamp = calculateClamp(px, designWidth, minScale);
+            calculatedClampDisplay.textContent = clamp;
+        }
+
+        function renderPxList() {
+            const designWidth = parseFloat(designWidthInput.value);
+            const minScale = parseFloat(minScaleInput.value);
+            let html = '';
+
+            PX_LIST.forEach(px => {
+                const vw = calculateVw(px, designWidth);
+                const clamp = calculateClamp(px, designWidth, minScale);
+                const vwId = `list-vw-${px}`;
+                const clampId = `list-clamp-${px}`;
+
+                html += `
+                    <div class="card bg-base-300 shadow-md p-4 space-y-2">
+                        <p class="text-sm opacity-70">原始 PX: <span class="font-mono text-primary font-bold">${px}px</span></p>
+                        
+                        <div class="copyable-cell rounded-md p-2 hover:bg-info-content/10" data-tip="点击复制 VW" onclick="copyResult('${vwId}', 'vw')">
+                            <p class="text-xs opacity-70">VW</p>
+                            <p class="text-lg font-bold break-all text-info">
+                                <span id="${vwId}">${vw}vw</span>
+                            </p>
+                        </div>
+                        
+                        <div class="copyable-cell rounded-md p-2 hover:bg-warning-content/10" data-tip="点击复制 CLAMP" onclick="copyResult('${clampId}', 'clamp')">
+                            <p class="text-xs opacity-70">CLAMP</p>
+                            <p class="text-md font-medium break-all text-warning">
+                                <span id="${clampId}">${clamp}</span>
+                            </p>
+                        </div>
+                    </div>
+                `;
+            });
+            pxListGrid.innerHTML = html;
+        }
+
+        // --- 复制功能 ---
+
+        function copyResult(elementId, type = 'value') {
+            const contentElement = document.getElementById(elementId);
+            const content = contentElement.textContent;
+
+            navigator.clipboard.writeText(content).then(() => {
+                // 1. 设置提示文字
+                const displayType = type === 'vw' ? 'VW 值' : (type === 'clamp' ? 'CLAMP 表达式' : '内容');
+                toastText.textContent = `已复制 ${displayType}: ${content}`;
+
+                // 2. 显示 Toast
+                clearTimeout(copyTimeoutId);
+                toastMessage.classList.remove('opacity-0', 'pointer-events-none');
+
+                // 3. 1.5秒后隐藏 Toast
+                copyTimeoutId = setTimeout(() => {
+                    toastMessage.classList.add('opacity-0', 'pointer-events-none');
+                }, 1500);
+            }).catch(err => {
+                console.error('无法复制文本: ', err);
+            });
+        }
+
+        // 将 copyResult 和 toggleTheme 绑定到 window
+        window.copyResult = copyResult;
+        window.toggleTheme = toggleTheme;
+
+        // --- 初始化 ---
+
+        function init() {
+            loadTheme();
+
+            const savedWidth = localStorage.getItem(DESIGN_WIDTH_KEY);
+            const savedScale = localStorage.getItem(MIN_SCALE_KEY);
+
+            let initialWidth = savedWidth ? parseFloat(savedWidth) : DEFAULT_WIDTH;
+            let initialScale = savedScale ? parseFloat(savedScale) : DEFAULT_SCALE;
+
+            designWidthInput.value = initialWidth;
+            minScaleInput.value = initialScale;
+
+            saveConfig();
+
+            designWidthInput.addEventListener('input', updateAfterDelay);
+            minScaleInput.addEventListener('input', updateAfterDelay);
+        }
+
+        function updateAfterDelay() {
+            clearTimeout(updateTimeout);
+            updateTimeout = setTimeout(saveConfig, 300);
+        }
+
+        init();
+    </script>
+</body>
+
+</html>

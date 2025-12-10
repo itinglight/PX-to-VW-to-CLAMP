@@ -64,4 +64,4 @@
 
 **itinglight**
 
-* [GitHub 主页](https://github.com/itinglight) (请替换为您的实际 GitHub 链接)
+* [GitHub 主页](https://github.com/itinglight) 
