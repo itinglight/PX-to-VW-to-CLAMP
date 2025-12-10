@@ -228,7 +228,7 @@
             if (isNaN(px) || px <= 0 || isNaN(w) || w <= 0) {
                 return '0.0000';
             }
-            return ((px / w) * 100).toFixed(4);
+            return ((px / w) * 100).toFixed(3);
         }
 
         function calculateClamp(pxValue, width, scale) {
@@ -237,13 +237,13 @@
             const s = parseFloat(scale) / 100;
 
             if (isNaN(px) || px <= 0 || isNaN(w) || w <= 0 || isNaN(s)) {
-                return 'clamp(0px, 0vw, 0px)';
+                return 'clamp(0px,0vw,0px)';
             }
 
             const vw = calculateVw(px, w);
             const minPx = (px * s).toFixed(2);
 
-            return `clamp(${minPx}px, ${vw}vw, ${px}px)`;
+            return `clamp(${minPx}px,${vw}vw,${px}px)`;
         }
 
         // --- 主题切换 ---
