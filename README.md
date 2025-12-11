@@ -1,7 +1,7 @@
 # ✨ PX-to-VW-to-CLAMP Pro
 
 [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![GitHub stars](https://img.shields.io/github/stars/itinglight/px-to-vw-clamp?style=social)](https://github.com/itinglight/px-to-vw-clamp)
+[![GitHub stars](https://img.shields.io/github/stars/itinglight/PX-to-VW-to-CLAMP?style=social)](https://github.com/itinglight/PX-to-VW-to-CLAMP)
 
 一个为现代前端开发者设计的简洁高效工具。它将传统的 **PX** 像素值，实时转换为 **VW** 视口单位，并根据可配置的缩放比例，自动生成**带有最小/最大限制**的 **CSS `clamp()` 函数表达式**。
 
